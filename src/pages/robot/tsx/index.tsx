@@ -1,6 +1,7 @@
 import React from "react";
 import { createRoot } from "react-dom/client";
 import "robot/css/index.css";
+import "robot/css/text.css"
 import { Robot } from "../../robot/tsx/robot";
 import { WebRTCConnection } from "../../../shared/webrtcconnections";
 import {
@@ -24,6 +25,7 @@ import {
     ROSBatteryState,
     BatteryVoltageMessage,
     delay,
+    RemoteStream,
 } from "shared/util";
 import { AllVideoStreamComponent, VideoStream } from "./videostreams";
 import { AudioStream } from "./audiostreams";
@@ -33,6 +35,10 @@ import {
     StretchToolMessage,
 } from "../../../shared/util";
 import { loginFirebaseSignalerAsRobot } from "shared/signaling/get_signaler";
+import { TextShowen } from "./showtext";
+import { OperationType } from "firebase/auth";
+import { CameraView } from "./videostreamsoperator";
+import { channel } from "diagnostics_channel";
 
 export const robot = new Robot({
     jointStateCallback: forwardJointStates,
@@ -52,6 +58,14 @@ export const robot = new Robot({
     stretchToolCallback: forwardStretchTool,
 });
 
+export let allRemoteStreams: Map<string, RemoteStream> = new Map<
+    string,
+    RemoteStream
+>();
+let operIPshow = null;
+let operIPIndicator: React.Dispatch<React.SetStateAction<string | null>> | null = null;
+let setStreamVersion: React.Dispatch<React.SetStateAction<number>> | null = null;
+
 export let connection: WebRTCConnection;
 export let navigationStream = new VideoStream(navigationProps);
 export let realsenseStream = new VideoStream(realsenseProps);
@@ -64,6 +78,7 @@ connection = new WebRTCConnection({
     polite: false,
     onRobotConnectionStart: handleSessionStart,
     onMessage: handleMessage,
+    onTrackAdded: handleRemoteTrackAdded,
     onConnectionEnd: disconnectFromRobot,
 });
 robot.setOnRosConnectCallback(async () => {
@@ -254,6 +269,27 @@ function forwardAMCLPose(transform: ROSLIB.Transform) {
         message: transform,
     } as MapPoseMessage);
 }
+function handleRemoteTrackAdded(event: RTCTrackEvent) {
+    const track = event.track;
+    const stream = event.streams[0];
+    const streamName = connection.cameraInfo[stream.id];
+    allRemoteStreams.set(streamName, {track, stream});
+    stream.getTracks().forEach(t => {
+        t.onended = () => {
+            allRemoteStreams.delete(streamName);
+            if (setStreamVersion) setStreamVersion(v => v + 1);
+        };
+    });
+    const audio = document.createElement("audio");
+    audio.srcObject = stream;
+    audio.autoplay = true;
+    document.body.appendChild(audio);
+
+
+    if(setStreamVersion) setStreamVersion(v => v + 1);
+}
+
+ 
 
 function handleMessage(message: WebRTCMessage) {
     if (!("type" in message)) {
@@ -262,6 +298,10 @@ function handleMessage(message: WebRTCMessage) {
     }
 
     switch (message.type) {
+        case "operIP":
+            operIPIndicator(message.ip);
+            operIPshow = message.ip;
+            break;
         case "driveBase":
             robot.executeBaseVelocity(message.modifier);
             break;
@@ -366,11 +406,42 @@ window.onbeforeunload = () => {
     connection.hangup();
 };
 
-// New method of rendering in react 18
+const App = () => {
+    const [streamVersion, _setStreamVersion] = React.useState(0);
+    setStreamVersion =  _setStreamVersion;
+    const [setoperIP, _operIPIndicator] = React.useState<string | null>(null);
+    operIPIndicator = _operIPIndicator;  
+
+    return(
+            <div id="rootOp">
+                {allRemoteStreams.has("operStream") ? (
+                    <CameraView
+                        id={"operStream"}
+                        remoteStreams={allRemoteStreams}
+                    />
+                ) : operIPshow !== null ? (
+                    <TextShowen text = {operIPshow}/>
+                ) : (
+                    <TextShowen text="Session is active!"/>
+                )}
+                <AllVideoStreamComponent
+                    streams={[navigationStream, realsenseStream, gripperStream]}
+                />
+            </div>
+    );
+}
+
+const container = document.getElementById("root");
+createRoot(container!).render(<App/>);
+
+
+
+
+/*// New method of rendering in react 18
 const container = document.getElementById("root");
 const root = createRoot(container!); // createRoot(container!) if you use TypeScript
 root.render(
     <AllVideoStreamComponent
         streams={[navigationStream, realsenseStream, gripperStream]}
     />,
-);
+);*/
