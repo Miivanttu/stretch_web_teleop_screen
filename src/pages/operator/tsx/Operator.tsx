@@ -4,7 +4,7 @@ import { SpeedControl } from "./static_components/SpeedControl";
 import { LayoutArea } from "./static_components/LayoutArea";
 import { CustomizeButton } from "./static_components/CustomizeButton";
 import { GlobalOptionsProps, Sidebar } from "./static_components/Sidebar";
-import { SharedState } from "./layout_components/CustomizableComponent";
+import { CustomizableComponent, SharedState } from "./layout_components/CustomizableComponent";
 import {
     ActionMode,
     ComponentDefinition,
@@ -41,12 +41,14 @@ import { Alert } from "./basic_components/Alert";
 import "operator/css/Operator.css";
 import { TextToSpeech } from "./layout_components/TextToSpeech";
 import { HomeTheRobot } from "./layout_components/HomeTheRobot";
+import { OperatorToggles } from "./layout_components/OperatorToggles";
 
 /** Operator interface webpage */
 export const Operator = (props: {
     remoteStreams: Map<string, RemoteStream>;
     layout: LayoutDefinition;
     storageHandler: StorageHandler;
+    operStream: MediaStream;
 }) => {
     const [customizing, setCustomizing] = React.useState(false);
     const [selectedPath, setSelectedPath] = React.useState<string | undefined>(
@@ -339,6 +341,7 @@ export const Operator = (props: {
                     placement="bottom"
                 />
                 <AudioControl remoteStreams={remoteStreams} />
+                <OperatorToggles operStream={props.operStream}/>
                 <SpeedControl
                     scale={velocityScale}
                     onChange={(newScale: number) => {

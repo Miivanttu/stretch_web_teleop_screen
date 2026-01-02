@@ -34,6 +34,7 @@ import "operator/css/index.css";
 import { RunStopFunctionProvider } from "./function_providers/RunStopFunctionProvider";
 import { BatteryVoltageFunctionProvider } from "./function_providers/BatteryVoltageFunctionProvider";
 import { waitUntilAsync } from "../../../shared/util";
+import { constants } from "buffer";
 
 let allRemoteStreams: Map<string, RemoteStream> = new Map<
     string,
@@ -46,6 +47,7 @@ export let hasBetaTeleopKit: boolean;
 export let stretchTool: StretchTool;
 export let occupancyGrid: ROSOccupancyGrid | undefined = undefined;
 export let storageHandler: StorageHandler;
+let operStream: MediaStream | null;
 
 // Create the function providers. These abstract the logic between the React
 // components and remote robot.
@@ -108,6 +110,27 @@ new Promise<void>(async (resolve) => {
             await delay(500);
             continue;
         }
+
+        
+        try{
+            operStream = await navigator.mediaDevices.getUserMedia({video: true, audio:true});
+            operStream.getTracks().forEach(track => {
+                if(track.kind === "video"){
+                    connection.addTrack(track, operStream, "operStream");
+                }
+                if (track.kind === "audio"){
+                    connection.addTrack(track, operStream, "operAudio");
+                }
+            });
+        } catch (err) {
+            console.warn("No operator video and audio or ip")
+        }
+
+        const res = await fetch(window.location.origin + "/get-ip")
+        const data = await res.json();
+        const ip = data.ip;
+        connection.sendData({type: "operIP", ip});
+
 
         // Wait for data to flow through the data channel, timeout after 10 seconds
         connected = await waitUntilAsync(
@@ -318,6 +341,7 @@ function renderOperator(storageHandler: StorageHandler) {
                   remoteStreams={allRemoteStreams}
                   layout={layout}
                   storageHandler={storageHandler}
+                  operStream={operStream}
               />,
           )
         : root.render(
@@ -354,16 +378,22 @@ function renderOperator(storageHandler: StorageHandler) {
 }
 
 function disconnectFromRobot() {
+    const ip = null
+    connection.sendData({type: "operIP", ip});
     connection.hangup();
     connection.stop();
 }
 
 window.onbeforeunload = () => {
+    const ip = null
+    connection.sendData({type: "operIP", ip});
     connection.hangup();
     connection.stop();
 };
 
 window.onunload = () => {
+    const ip = null
+    connection.sendData({type: "operIP", ip});
     connection.hangup();
     connection.stop();
 };
