@@ -1,0 +1,12 @@
+.text-show{
+    align-items: center;
+    font-size: 14rem;
+    color: black;
+    margin-bottom: 100%;
+    margin-top: 5%;
+    text-align: center;
+    width: 100%;
+    white-space: "normal";
+    word-wrap: break-word;
+    height: 100%;
+}
