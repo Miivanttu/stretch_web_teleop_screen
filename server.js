@@ -6,6 +6,7 @@ var options = {
     cert: fs.readFileSync(`certificates/${process.env.certfile}`),
 };
 
+const { exec } = require("child_process");
 const socket = require('socket.io');
 var express = require('express');
 var app = express();
@@ -67,6 +68,8 @@ io.on('connection', function (socket) {
             socket.join(ROOM);
             robo_sock = socket.id;
             status = 'online';
+            exec('node controll_led.js open');
+            //exec("aplay /AudioSignals/beep.wav");
             console.log('join_as_robot SUCCESS');
             callback({ success: true });
         } else {
@@ -89,7 +92,12 @@ io.on('connection', function (socket) {
                 socket.join(ROOM);
                 socket.in(ROOM).emit('joined');
                 oper_sock = socket.id;
+                exec("node controll_led.js taken");
+                //exec("aplay /AudioSignals/beep.wav");
                 console.log('join_as_operator SUCCESS');
+                app.get("/get-ip", (req, res) => {
+                    res.json({ ip: req.ip });
+                });
                 callback({ success: true });
             } else {
                 console.log(
@@ -122,11 +130,15 @@ io.on('connection', function (socket) {
             if (socket.id == robo_sock) {
                 status = 'offline';
                 robo_sock = undefined;
+                exec("node controll_led.js close");
+                //exec("aplay /AudioSignals/beep.wav");
                 console.log('Robot disconnected');
             }
             if (socket.id == oper_sock) {
                 status = 'online';
                 oper_sock = undefined;
+                exec("node controll_led.js open");
+                //exec("aplay /AudioSignals/beep.wav");
                 console.log('Operator disconnected');
             }
             socket.leave(ROOM);
@@ -138,11 +150,15 @@ io.on('connection', function (socket) {
         if (socket.id == robo_sock) {
             status = 'offline';
             robo_sock = undefined;
+            exec("node controll_led.js close");
+            //exec("aplay /AudioSignals/beep.wav");
             console.log('Robot disconnected');
         }
         if (socket.id == oper_sock) {
             status = 'online';
             oper_sock = undefined;
+            exec("node controll_led.js open");
+            //exec("aplay /AudioSignals/beep.wav");
             console.log('Operator disconnected');
         }
         updateRooms();

@@ -16,3 +16,4 @@ if [[ $t1 -ne 0 ]]; then
     sudo pkill screen
 fi
 pm2 kill
+node controll_led.js close

@@ -66,12 +66,13 @@ const listenConsole = async (page) => {
     ///////////////////////////////////////////////
 
     const browser = await firefox.launch({
-        headless: true, // default is true
+        headless: false, // default is true
         handleSIGINT: false,
         defaultViewport: null,
         firefoxUserPrefs: {
             "permissions.default.microphone": 1, // Give permission to access the robot's microphone
         },
+        args: ['--kiosk']
     });
 
     const context = await browser.newContext({ ignoreHTTPSErrors: true }); // avoid ERR_CERT_COMMON_NAME_INVALID
