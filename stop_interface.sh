@@ -17,3 +17,4 @@ if [[ $t1 -ne 0 ]]; then
 fi
 pm2 kill
 node controll_led.js close
+aplay /AudioSignals/term.wav
