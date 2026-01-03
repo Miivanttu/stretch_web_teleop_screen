@@ -2,16 +2,12 @@ import React from "react";
 import {
     RemoteStream,
 } from "shared/util";
-//import "robot/css/operVideo.css";
 
 export const CameraView = (props: {
     id: string;
     remoteStreams: Map<string, RemoteStream>;
-    //style?: React.CSSProperties;
 }) => {
-    // Reference to the video element
     const videoRef = React.useRef<HTMLVideoElement>(null);
-    // Get the stream to display inside the video
 
     const [stream, setStream] = React.useState<MediaStream | null>(null);
 
@@ -23,7 +19,6 @@ export const CameraView = (props: {
         }
     }, [props.remoteStreams, props.id, stream]);
 
-    // Update the source of the video stream
     React.useEffect(() => {
         if (!videoRef?.current) return;
         videoRef.current.srcObject = stream;
